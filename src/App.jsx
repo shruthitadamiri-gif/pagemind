@@ -5,7 +5,6 @@ import BookCard from './components/BookCard'
 import CategoryFilter from './components/CategoryFilter'
 import CategorySelector from './components/CategorySelector'
 import GenreToggle from './components/GenreToggle'
-import SpecialistBadge from './components/SpecialistBadge'
 import { getRecommendations } from './api'
 
 export default function App() {
@@ -66,7 +65,6 @@ export default function App() {
       <div className="header">
         <h1>PageMind</h1>
         <p>Tell it what's on your mind. It'll find the book.</p>
-        <SpecialistBadge />
       </div>
 
       <CategorySelector value={domainId} onChange={handleDomainChange} />

@@ -1,6 +1,8 @@
 import { CATEGORIES } from '../categories'
 
 export default function CategorySelector({ value, onChange }) {
+  const selected = value ? CATEGORIES.find((c) => c.id === value) : null
+
   return (
     <div className="category-selector">
       <p className="category-selector-label">Pick a domain, or let PageMind decide</p>
@@ -23,6 +25,11 @@ export default function CategorySelector({ value, onChange }) {
           </button>
         ))}
       </div>
+      <p className="category-selector-description">
+        {selected
+          ? selected.description
+          : `Specialist across ${CATEGORIES.length} domains — ${CATEGORIES.map((c) => c.label).join(', ')}.`}
+      </p>
     </div>
   )
 }
