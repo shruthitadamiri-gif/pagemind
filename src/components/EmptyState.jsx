@@ -1,7 +1,8 @@
 const EXAMPLE_PROMPTS = [
-  'Something that challenges how I think about risk',
-  'A book about how tech companies manipulate us',
-  'Why smart people make irrational decisions under pressure',
+  { prompt: 'Why do smart people make terrible decisions?', categoryId: 'decision-science' },
+  { prompt: 'How did geography determine which civilizations won?', categoryId: 'macro-history' },
+  { prompt: 'What actually shapes who we become — genes or environment?', categoryId: 'human-nature' },
+  { prompt: 'Stories of women who changed history but were written out of it', categoryId: 'women-society' },
 ]
 
 export default function EmptyState({ onPick }) {
@@ -9,8 +10,12 @@ export default function EmptyState({ onPick }) {
     <div className="examples">
       <p className="examples-label">Not sure where to start? Try one of these:</p>
       <div className="example-chips">
-        {EXAMPLE_PROMPTS.map((prompt) => (
-          <button key={prompt} className="example-chip" onClick={() => onPick(prompt)}>
+        {EXAMPLE_PROMPTS.map(({ prompt, categoryId }) => (
+          <button
+            key={prompt}
+            className="example-chip"
+            onClick={() => onPick(prompt, categoryId)}
+          >
             {prompt}
           </button>
         ))}

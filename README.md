@@ -7,16 +7,23 @@ you're in the mood for — a feeling, a question, a vague vibe — and returns
 4-6 real book recommendations, each with a personalised reason tied to what
 you typed.
 
-It's tuned to be a specialist in **Decision Science**, with strong range
-across behavioural economics, psychology, game theory, persuasion, ethics,
-and AI/tech — so it's a good fit for prompts like:
+It's tuned to be a specialist across four domains:
 
-- "Something that challenges how I think about risk"
-- "A book about how tech companies manipulate us"
-- "Why smart people make irrational decisions under pressure"
+- **Decision Science** — behavioural economics, psychology, game theory, persuasion, ethics, and AI/tech
+- **Macro History** — why civilizations and economies rise, fall, and transform
+- **Human Nature** — social psychology and the nature-vs-nurture debate
+- **Women & Society** — women's experience across history, science, politics, and culture
+
+A category picker lets you pin a search to one domain, or leave it on "All
+Categories" and let PageMind infer the best fit — good for prompts like:
+
+- "Something that challenges how I think about risk" (Decision Science)
+- "How did geography determine which civilizations won?" (Macro History)
+- "What actually shapes who we become — genes or environment?" (Human Nature)
+- "Stories of women who changed history but were written out of it" (Women & Society)
 
 A Fiction / Non-fiction / Either toggle lets you steer the genre of results
-even when your prompt doesn't mention it explicitly.
+on top of the domain, even when your prompt doesn't mention it explicitly.
 
 > The free hosting tier sleeps after inactivity, so the first request after
 > idle time can take 30-50 seconds to wake up.
@@ -59,26 +66,31 @@ npm start
 server/
   index.js              Express server: /api/recommend, rate limiting, serves built frontend in production
 src/
-  App.jsx                top-level state: query, results, loading, filters, genre mode
+  App.jsx                top-level state: query, results, loading, filters, genre mode, domain
   api.js                 calls the local /api/recommend endpoint
-  categories.js          category list, genre modes, and system prompt builder (shared by server)
+  categories.js          domain definitions, genre modes, and system prompt builder (shared by server)
   coverCache.js           Open Library cover lookup + cache
   index.css               all styling
   components/
     SearchBar.jsx
     EmptyState.jsx
     BookCard.jsx
-    CategoryFilter.jsx
+    CategoryFilter.jsx       post-search filter chips (derived from returned results)
+    CategorySelector.jsx     pre-search domain picker
     GenreToggle.jsx
     SpecialistBadge.jsx
 ```
 
-## Adding new categories
+## Adding new domains/categories
 
-The category system is centralised in [`src/categories.js`](src/categories.js).
-To add a new category (e.g. "History", "Memoir", "Science"), just add it to
-the `CATEGORIES` array — the system prompt and the UI's filter chips both
-derive from this list automatically.
+The domain system is centralised in [`src/categories.js`](src/categories.js).
+Each entry in the `CATEGORIES` array is an object with `id`, `label`,
+`description`, `covers` (a list of sub-topics), `tone`, and `examples`
+(real books that anchor the domain for the model). To add a new domain —
+say "Science" or "Memoir" — add a new object with those fields. Everything
+else derives from this automatically: the system prompt, the specialist
+badge under the title, the category picker, and the post-search filter
+chips. No other code changes are needed.
 
 To add a new genre mode beyond Fiction/Non-fiction/Either, add an entry to
 `GENRE_MODES` and a matching instruction in `GENRE_INSTRUCTIONS`.

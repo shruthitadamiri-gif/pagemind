@@ -4,7 +4,7 @@ import rateLimit from 'express-rate-limit'
 import Anthropic from '@anthropic-ai/sdk'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { buildSystemPrompt } from '../src/categories.js'
+import { buildSystemPrompt, CATEGORIES } from '../src/categories.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, '..', 'dist')
@@ -30,17 +30,22 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
     })
   }
 
-  const { prompt, genreMode } = req.body || {}
+  const { prompt, genreMode, categoryId } = req.body || {}
 
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 500) {
     return res.status(400).json({ error: 'Invalid prompt.' })
   }
 
+  const validCategoryId =
+    typeof categoryId === 'string' && CATEGORIES.some((c) => c.id === categoryId)
+      ? categoryId
+      : null
+
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
-      system: buildSystemPrompt(genreMode),
+      system: buildSystemPrompt(genreMode, validCategoryId),
       messages: [{ role: 'user', content: prompt }],
     })
 

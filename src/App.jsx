@@ -3,6 +3,7 @@ import SearchBar from './components/SearchBar'
 import EmptyState from './components/EmptyState'
 import BookCard from './components/BookCard'
 import CategoryFilter from './components/CategoryFilter'
+import CategorySelector from './components/CategorySelector'
 import GenreToggle from './components/GenreToggle'
 import SpecialistBadge from './components/SpecialistBadge'
 import { getRecommendations } from './api'
@@ -14,13 +15,14 @@ export default function App() {
   const [error, setError] = useState(null)
   const [activeCategory, setActiveCategory] = useState(null)
   const [genreMode, setGenreMode] = useState('either')
+  const [domainId, setDomainId] = useState(null)
 
-  async function runSearch(prompt, mode = genreMode) {
+  async function runSearch(prompt, mode = genreMode, domain = domainId) {
     setLoading(true)
     setError(null)
     setActiveCategory(null)
     try {
-      const results = await getRecommendations(prompt, mode)
+      const results = await getRecommendations(prompt, mode, domain)
       setBooks(results)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -30,15 +32,23 @@ export default function App() {
     }
   }
 
-  function handleExamplePick(prompt) {
+  function handleExamplePick(prompt, categoryId = null) {
     setQuery(prompt)
-    runSearch(prompt)
+    setDomainId(categoryId)
+    runSearch(prompt, genreMode, categoryId)
   }
 
   function handleGenreChange(mode) {
     setGenreMode(mode)
     if (query.trim() && books.length > 0) {
-      runSearch(query, mode)
+      runSearch(query, mode, domainId)
+    }
+  }
+
+  function handleDomainChange(newDomainId) {
+    setDomainId(newDomainId)
+    if (query.trim() && books.length > 0) {
+      runSearch(query, genreMode, newDomainId)
     }
   }
 
@@ -58,6 +68,8 @@ export default function App() {
         <p>Tell it what's on your mind. It'll find the book.</p>
         <SpecialistBadge />
       </div>
+
+      <CategorySelector value={domainId} onChange={handleDomainChange} />
 
       <SearchBar
         value={query}
