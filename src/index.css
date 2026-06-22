@@ -21,6 +21,12 @@
   box-sizing: border-box;
 }
 
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent-3);
+  outline-offset: 2px;
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -202,7 +208,7 @@ body {
 }
 
 .category-selector {
-  margin-top: 22px;
+  margin-top: 0;
   text-align: center;
 }
 
@@ -218,6 +224,53 @@ body {
   line-height: 1.5;
   max-width: 560px;
   margin: 12px auto 0;
+}
+
+.refine-controls {
+  margin-top: 28px;
+  padding: 18px 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.refine-label {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  opacity: 0.7;
+  margin: 0 0 14px;
+}
+
+.refine-controls .filter-chips {
+  margin: 0 0 4px;
+}
+
+.refine-controls .filter-chip {
+  font-size: 0.82rem;
+  padding: 6px 13px;
+}
+
+.refine-controls .category-selector-description {
+  font-size: 0.8rem;
+}
+
+.refine-controls .genre-toggle {
+  margin: 16px auto 0;
+}
+
+.refine-controls .genre-toggle-option {
+  font-size: 0.82rem;
+  padding: 6px 14px;
+}
+
+.showing-indicator {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  margin: 36px 0 0;
 }
 
 .error-banner {
@@ -307,6 +360,23 @@ body {
   }
   .search-button {
     padding: 15px 26px;
+  }
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 6px;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    scrollbar-width: none;
+  }
+  .filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-chip {
+    flex-shrink: 0;
   }
 }
 

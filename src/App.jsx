@@ -6,6 +6,7 @@ import CategoryFilter from './components/CategoryFilter'
 import CategorySelector from './components/CategorySelector'
 import GenreToggle from './components/GenreToggle'
 import { getRecommendations } from './api'
+import { CATEGORIES, GENRE_MODES } from './categories'
 
 export default function App() {
   const [query, setQuery] = useState('')
@@ -60,14 +61,17 @@ export default function App() {
     ? books.filter((b) => b.category === activeCategory)
     : books
 
+  const domainLabel = domainId
+    ? CATEGORIES.find((c) => c.id === domainId)?.label
+    : 'All Categories'
+  const genreLabel = GENRE_MODES.find((g) => g.id === genreMode)?.label || 'Either'
+
   return (
     <div className="app">
       <div className="header">
         <h1>PageMind</h1>
         <p>Tell it what's on your mind. It'll find the book.</p>
       </div>
-
-      <CategorySelector value={domainId} onChange={handleDomainChange} />
 
       <SearchBar
         value={query}
@@ -76,7 +80,11 @@ export default function App() {
         loading={loading}
       />
 
-      <GenreToggle value={genreMode} onChange={handleGenreChange} />
+      <div className="refine-controls">
+        <p className="refine-label">Refine your search</p>
+        <CategorySelector value={domainId} onChange={handleDomainChange} />
+        <GenreToggle value={genreMode} onChange={handleGenreChange} />
+      </div>
 
       {error && <div className="error-banner">{error}</div>}
 
@@ -93,6 +101,9 @@ export default function App() {
 
       {!loading && books.length > 0 && (
         <>
+          <p className="showing-indicator">
+            Showing: {domainLabel} · {genreLabel}
+          </p>
           <CategoryFilter
             categories={categories}
             active={activeCategory}
