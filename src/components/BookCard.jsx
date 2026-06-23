@@ -4,6 +4,7 @@ import { getCoverUrl } from '../coverCache'
 export default function BookCard({ book }) {
   const [coverUrl, setCoverUrl] = useState(null)
   const [coverFailed, setCoverFailed] = useState(false)
+  const isKids = Boolean(book.age_band)
 
   useEffect(() => {
     let cancelled = false
@@ -39,15 +40,46 @@ export default function BookCard({ book }) {
         <div className="book-card-info">
           <div className="book-card-top-row">
             <h3 className="book-title">{book.title}</h3>
-            {book.category && <span className="category-tag">{book.category}</span>}
+            <div className="book-tags">
+              {book.category && <span className="category-tag">{book.category}</span>}
+              {isKids && book.age_band && (
+                <span className="category-tag age-band-tag">{book.age_band}</span>
+              )}
+            </div>
           </div>
           <p className="book-author">
             {book.author}
             {book.year ? ` · ${book.year}` : ''}
           </p>
+          {isKids && book.illustrator && (
+            <p className="book-illustrator">Illustrated by {book.illustrator}</p>
+          )}
         </div>
       </div>
       <p className="book-blurb">{book.blurb}</p>
+      {isKids && (
+        <div className="kids-meta">
+          {book.read_aloud_rating && (
+            <span className="read-aloud-rating" title="Read-aloud rating">
+              {book.read_aloud_rating}
+            </span>
+          )}
+          {book.library_availability && (
+            <span
+              className={`library-badge ${
+                book.library_availability === 'Likely at library' ? 'available' : 'check'
+              }`}
+            >
+              {book.library_availability}
+            </span>
+          )}
+          {book.includes_music && (
+            <span className="music-badge" title="Includes music">
+              🎵 Music
+            </span>
+          )}
+        </div>
+      )}
       <div className="why-box">
         <p className="why-label">Why this for you</p>
         <p className="why-text">{book.why_recommended}</p>

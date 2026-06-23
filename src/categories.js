@@ -67,9 +67,68 @@ export const CATEGORIES = [
     tone: 'Wide-ranging, intersectional, intellectually serious. Not prescriptive or ideological — the goal is illumination, not advocacy.',
     examples: ['Invisible Women', 'The Second Sex', 'Educated', 'Untamed', 'The Feminine Mystique'],
   },
+  {
+    id: 'kids',
+    label: 'Kids',
+    description:
+      'Read-aloud picture books for toddlers and young children — books a parent can actually borrow from the library and enjoy reading out loud night after night.',
+    covers: [
+      'Character & Feelings',
+      'Silly & Absurd',
+      'Rhythm & Repetition',
+      'Nature & Animals',
+      'Bedtime & Calm',
+      'Friendship & Kindness',
+      'Diversity & Identity',
+      'Concepts & Learning',
+      'Music & Sound',
+    ],
+    tone: 'Warm, playful, and practical — books a tired parent can read aloud night after night and still enjoy.',
+    examples: ['Dragons Love Tacos', 'Llama Llama Red Pajama', 'Little Blue Truck', 'Grumpy Monkey', 'The Storybook Orchestra'],
+  },
 ]
 
 export const PRIMARY_CATEGORY = 'Decision Science'
+
+export const KIDS_CATEGORY_ID = 'kids'
+
+// Add a new band here to expand the Kids age-band picker — no other code
+// changes needed for the picker UI, but update the system prompt's
+// outgrown-staples guidance below if the youngest band changes.
+export const KIDS_AGE_BANDS = [
+  { id: '3-4', label: '3–4 · Toddler Sweet Spot', shortLabel: '3–4' },
+  { id: '4-5', label: '4–5 · Pushing Forward', shortLabel: '4–5' },
+  { id: '5-6', label: '5–6 · Pre-Reader', shortLabel: '5–6' },
+  { id: '6-7', label: '6–7 · Early Reader', shortLabel: '6–7' },
+]
+
+export const KIDS_DEFAULT_AGE_BAND = '3-4'
+
+// Add a new sub-category here to expand the Kids picker — no other code
+// changes needed. Update KIDS_SUB_CATEGORY_GUIDANCE below if it needs its
+// own dedicated system-prompt instructions (like Music & Sound does).
+export const KIDS_SUB_CATEGORIES = [
+  'Character & Feelings',
+  'Silly & Absurd',
+  'Rhythm & Repetition',
+  'Nature & Animals',
+  'Bedtime & Calm',
+  'Friendship & Kindness',
+  'Diversity & Identity',
+  'Concepts & Learning',
+  'Music & Sound',
+]
+
+const KIDS_SUB_CATEGORY_GUIDANCE = {
+  'Music & Sound': `For Music & Sound specifically, prioritise: books that come with accompanying music (CD, QR code, streaming link); books where the text has strong musical rhythm meant to be performed; books about musical instruments, composers, or the experience of music; and books that use sound words, onomatopoeia, and rhythm as storytelling devices. Examples in this space: "The Storybook Orchestra" series, "Zin! Zin! Zin! A Violin" by Lloyd Moss, "Mozart's Magnificent Voyage", "Ben's Trumpet" by Rachel Isadora, "The Noisy Paint Box", "Giraffes Can't Dance".`,
+}
+
+const KIDS_OUTGROWN_STAPLES = [
+  'The Very Hungry Caterpillar',
+  'Goodnight Moon',
+  'Brown Bear, Brown Bear, What Do You See?',
+  'Chicka Chicka Boom Boom',
+]
 
 // Add a new mode here to expand PageMind's genre options — no other code changes needed.
 export const GENRE_MODES = [
@@ -95,7 +154,63 @@ Tone: ${category.tone}
 Example books in this domain: ${category.examples.join(', ')}`
 }
 
-export function buildSystemPrompt(genreMode = 'either', categoryId = null) {
+function buildKidsInstructions(kidsFilters = {}) {
+  const ageBand =
+    KIDS_AGE_BANDS.find((b) => b.id === kidsFilters.ageBandId) ||
+    KIDS_AGE_BANDS.find((b) => b.id === KIDS_DEFAULT_AGE_BAND)
+  const subCategory = kidsFilters.subCategoryId || null
+  const subCategoryGuidance = subCategory ? KIDS_SUB_CATEGORY_GUIDANCE[subCategory] : null
+
+  return `### Kids-specific instructions
+
+The reader is a parent looking for read-aloud books to borrow from the library for their child.
+
+Age band: ${ageBand.label}. Recommendations MUST be age-appropriate for this band. Do not recommend books the child has likely already outgrown — staples like ${KIDS_OUTGROWN_STAPLES.map((t) => `"${t}"`).join(', ')} should only be recommended if the age band is exactly 3–4; never recommend them for 4–5, 5–6, or 6–7.
+
+${subCategory ? `The parent has filtered to the "${subCategory}" sub-category — every recommendation must fit this sub-category.` : 'No sub-category filter is set — recommend across whichever sub-categories fit the prompt best.'}
+
+Prioritise:
+- Read-aloud quality: strong rhythm, pacing, and language that sounds good spoken aloud by a parent.
+- Library availability: prefer widely available titles a parent can realistically borrow from a public library.
+- Taste profile: this child loves humor and absurdist premises (like "Dragons Love Tacos", "Grumpy Monkey"), loveable characters with big feelings (like the Llama Llama series), rhythm and repetition (like the Little Blue Truck series), animal characters, and satisfying repeatable story arcs. She also loved "The Storybook Orchestra" series, which pairs classical music with narrative storytelling — recommend similar books that integrate music, rhythm, or sound as a core part of the experience, not just background, when relevant.
+${subCategoryGuidance ? `\n${subCategoryGuidance}` : ''}`
+}
+
+const STANDARD_RESPONSE_SHAPE = `Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
+{
+  "books": [
+    {
+      "title": "",
+      "author": "",
+      "year": "",
+      "category": "",
+      "blurb": "",
+      "why_recommended": ""
+    }
+  ]
+}`
+
+const KIDS_RESPONSE_SHAPE = `Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
+{
+  "books": [
+    {
+      "title": "",
+      "author": "",
+      "illustrator": "",
+      "age_band": "",
+      "sub_category": "",
+      "category": "Kids",
+      "blurb": "",
+      "why_recommended": "",
+      "read_aloud_rating": "1 to 5 stars, e.g. \\"★★★★☆\\"",
+      "library_availability": "Likely at library" or "Check availability",
+      "includes_music": true or false
+    }
+  ]
+}`
+
+export function buildSystemPrompt(genreMode = 'either', categoryId = null, kidsFilters = {}) {
+  const isKids = categoryId === KIDS_CATEGORY_ID
   const genreInstruction = GENRE_INSTRUCTIONS[genreMode] || GENRE_INSTRUCTIONS.either
   const selected = categoryId ? CATEGORIES.find((c) => c.id === categoryId) : null
 
@@ -111,28 +226,16 @@ ${categoryBlock}
 
 ${categoryConstraint}
 
+${isKids ? buildKidsInstructions(kidsFilters) : ''}
+
 A user will describe, in plain English, the kind of book or reading experience they're in the mood for. It might be a topic, a feeling, a question they're wrestling with, or a vague vibe. Your job is to recommend 4-6 real, published books that genuinely fit what they're after.
 
-Genre constraint for this request: ${genreInstruction}
-
-Guidelines:
+${isKids ? '' : `Genre constraint for this request: ${genreInstruction}\n\n`}Guidelines:
 - Recommend real books that exist. Do not invent titles or authors.
 - Each "why_recommended" must be personalised: explicitly tie the book back to specific words, feelings, or framing in what the user typed. Avoid generic blurbs like "this is a great book about X."
 - Each "blurb" should be a single punchy sentence describing the book itself, written like a smart friend describing it over coffee — not a back-cover summary.
-- "category" should be the single best-fit tag for the book — use one of the domain names above, or a more specific sub-topic within a domain (e.g. "Game Theory" within Decision Science, "Political Economy" within Macro History) when that's more precise. Use fiction genres like "Literary Fiction" or "Science Fiction" when the genre constraint calls for fiction.
+${isKids ? '- "sub_category" should be the single best-fit tag from the Kids domain\'s "Covers" list above.' : '- "category" should be the single best-fit tag for the book — use one of the domain names above, or a more specific sub-topic within a domain (e.g. "Game Theory" within Decision Science, "Political Economy" within Macro History) when that\'s more precise. Use fiction genres like "Literary Fiction" or "Science Fiction" when the genre constraint calls for fiction.'}
 - Vary the books — avoid recommending only extremely famous titles when lesser-known gems fit better.
 
-Respond with ONLY valid JSON, no markdown fences, no commentary, in exactly this shape:
-{
-  "books": [
-    {
-      "title": "",
-      "author": "",
-      "year": "",
-      "category": "",
-      "blurb": "",
-      "why_recommended": ""
-    }
-  ]
-}`
+${isKids ? KIDS_RESPONSE_SHAPE : STANDARD_RESPONSE_SHAPE}`
 }

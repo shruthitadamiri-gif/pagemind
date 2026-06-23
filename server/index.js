@@ -4,7 +4,14 @@ import rateLimit from 'express-rate-limit'
 import Anthropic from '@anthropic-ai/sdk'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { buildSystemPrompt, CATEGORIES } from '../src/categories.js'
+import {
+  buildSystemPrompt,
+  CATEGORIES,
+  KIDS_CATEGORY_ID,
+  KIDS_AGE_BANDS,
+  KIDS_DEFAULT_AGE_BAND,
+  KIDS_SUB_CATEGORIES,
+} from '../src/categories.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, '..', 'dist')
@@ -30,7 +37,7 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
     })
   }
 
-  const { prompt, genreMode, categoryId } = req.body || {}
+  const { prompt, genreMode, categoryId, kidsFilters } = req.body || {}
 
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 500) {
     return res.status(400).json({ error: 'Invalid prompt.' })
@@ -41,11 +48,24 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
       ? categoryId
       : null
 
+  let validKidsFilters = {}
+  if (validCategoryId === KIDS_CATEGORY_ID) {
+    const ageBandId =
+      kidsFilters && KIDS_AGE_BANDS.some((b) => b.id === kidsFilters.ageBandId)
+        ? kidsFilters.ageBandId
+        : KIDS_DEFAULT_AGE_BAND
+    const subCategoryId =
+      kidsFilters && KIDS_SUB_CATEGORIES.includes(kidsFilters.subCategoryId)
+        ? kidsFilters.subCategoryId
+        : null
+    validKidsFilters = { ageBandId, subCategoryId }
+  }
+
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
-      system: buildSystemPrompt(genreMode, validCategoryId),
+      system: buildSystemPrompt(genreMode, validCategoryId, validKidsFilters),
       messages: [{ role: 'user', content: prompt }],
     })
 
