@@ -146,7 +146,7 @@ export default function App() {
             onSubCategoryChange={handleSubCategoryChange}
           />
         )}
-        <GenreToggle value={genreMode} onChange={handleGenreChange} />
+        {!isKidsDomain && <GenreToggle value={genreMode} onChange={handleGenreChange} />}
       </div>
 
       {error && <div className="error-banner">{error}</div>}

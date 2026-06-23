@@ -96,10 +96,10 @@ export const KIDS_CATEGORY_ID = 'kids'
 // changes needed for the picker UI, but update the system prompt's
 // outgrown-staples guidance below if the youngest band changes.
 export const KIDS_AGE_BANDS = [
-  { id: '3-4', label: '3–4 · Toddler Sweet Spot', shortLabel: '3–4' },
-  { id: '4-5', label: '4–5 · Pushing Forward', shortLabel: '4–5' },
-  { id: '5-6', label: '5–6 · Pre-Reader', shortLabel: '5–6' },
-  { id: '6-7', label: '6–7 · Early Reader', shortLabel: '6–7' },
+  { id: '3-4', label: 'Ages 3–4', shortLabel: '3–4' },
+  { id: '4-5', label: 'Ages 4–5', shortLabel: '4–5' },
+  { id: '5-6', label: 'Ages 5–6', shortLabel: '5–6' },
+  { id: '6-7', label: 'Ages 6–7', shortLabel: '6–7' },
 ]
 
 export const KIDS_DEFAULT_AGE_BAND = '3-4'
