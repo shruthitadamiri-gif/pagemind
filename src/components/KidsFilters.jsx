@@ -8,42 +8,41 @@ export default function KidsFilters({
 }) {
   return (
     <div className="kids-filters">
-      <p className="category-selector-label">Age band</p>
-      <div className="filter-chips">
+      <label className="category-selector-label" htmlFor="age-band-select">
+        Age band
+      </label>
+      <select
+        id="age-band-select"
+        className="dropdown-select"
+        value={ageBandId}
+        onChange={(e) => onAgeBandChange(e.target.value)}
+      >
         {KIDS_AGE_BANDS.map((band) => (
-          <button
-            key={band.id}
-            type="button"
-            className={`filter-chip ${ageBandId === band.id ? 'active' : ''}`}
-            onClick={() => onAgeBandChange(band.id)}
-          >
+          <option key={band.id} value={band.id}>
             {band.label}
-          </button>
+          </option>
         ))}
-      </div>
+      </select>
 
-      <p className="category-selector-label kids-subcategory-label">
-        Sub-category (optional)
-      </p>
-      <div className="filter-chips">
-        <button
-          type="button"
-          className={`filter-chip ${!subCategoryId ? 'active' : ''}`}
-          onClick={() => onSubCategoryChange(null)}
-        >
-          Any
-        </button>
+      <label
+        className="category-selector-label kids-subcategory-label"
+        htmlFor="sub-category-select"
+      >
+        Theme (optional)
+      </label>
+      <select
+        id="sub-category-select"
+        className="dropdown-select"
+        value={subCategoryId || ''}
+        onChange={(e) => onSubCategoryChange(e.target.value || null)}
+      >
+        <option value="">Any</option>
         {KIDS_SUB_CATEGORIES.map((sub) => (
-          <button
-            key={sub}
-            type="button"
-            className={`filter-chip ${subCategoryId === sub ? 'active' : ''}`}
-            onClick={() => onSubCategoryChange(subCategoryId === sub ? null : sub)}
-          >
+          <option key={sub} value={sub}>
             {sub}
-          </button>
+          </option>
         ))}
-      </div>
+      </select>
     </div>
   )
 }

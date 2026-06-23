@@ -5,26 +5,22 @@ export default function CategorySelector({ value, onChange }) {
 
   return (
     <div className="category-selector">
-      <p className="category-selector-label">Pick a domain, or let PageMind decide</p>
-      <div className="filter-chips">
-        <button
-          type="button"
-          className={`filter-chip ${value === null ? 'active' : ''}`}
-          onClick={() => onChange(null)}
-        >
-          All Categories
-        </button>
+      <label className="category-selector-label" htmlFor="domain-select">
+        Pick a domain, or let PageMind decide
+      </label>
+      <select
+        id="domain-select"
+        className="dropdown-select"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value || null)}
+      >
+        <option value="">All Categories</option>
         {CATEGORIES.map((category) => (
-          <button
-            key={category.id}
-            type="button"
-            className={`filter-chip ${value === category.id ? 'active' : ''}`}
-            onClick={() => onChange(category.id)}
-          >
+          <option key={category.id} value={category.id}>
             {category.label}
-          </button>
+          </option>
         ))}
-      </div>
+      </select>
       <p className="category-selector-description">
         {selected
           ? selected.description
