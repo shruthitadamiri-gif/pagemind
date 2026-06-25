@@ -209,7 +209,36 @@ const KIDS_RESPONSE_SHAPE = `Respond with ONLY valid JSON, no markdown fences, n
   ]
 }`
 
-export function buildSystemPrompt(genreMode = 'either', categoryId = null, kidsFilters = {}) {
+function buildTasteProfileInstructions(tasteProfile) {
+  if (!tasteProfile) return ''
+  const { loved, notForMe, wantToRead } = tasteProfile
+  if (!loved && !notForMe && !wantToRead) return ''
+
+  return `### Reader feedback history
+
+This reader has given feedback on past recommendations from this app. Use it to personalise this round, but don't force a connection that isn't genuine:
+${loved ? `- Loved: ${loved}. Lean toward whatever makes these work for them — tone, structure, subject, voice.` : ''}
+${notForMe ? `- Didn't work for them: ${notForMe}. Do not recommend these again, and be cautious about very similar books unless the fit is otherwise strong.` : ''}
+${wantToRead ? `- Already queued to read: ${wantToRead}. Do not recommend these again since they already know about them.` : ''}
+`
+}
+
+function buildExcludeInstructions(excludeTitles) {
+  if (!excludeTitles || excludeTitles.length === 0) return ''
+  return `### Already shown — hard exclusion
+
+CRITICAL: the reader has already seen these exact titles in this session. Recommending any of them again is a failure condition, even if one was just marked "didn't work for them" above and seems thematically perfect — pick a genuinely different book instead: ${excludeTitles.map((t) => `"${t}"`).join(', ')}.
+`
+}
+
+export function buildSystemPrompt(
+  genreMode = 'either',
+  categoryId = null,
+  kidsFilters = {},
+  tasteProfile = null,
+  excludeTitles = [],
+  count = null
+) {
   const isKids = categoryId === KIDS_CATEGORY_ID
   const genreInstruction = GENRE_INSTRUCTIONS[genreMode] || GENRE_INSTRUCTIONS.either
   const selected = categoryId ? CATEGORIES.find((c) => c.id === categoryId) : null
@@ -228,7 +257,11 @@ ${categoryConstraint}
 
 ${isKids ? buildKidsInstructions(kidsFilters) : ''}
 
-A user will describe, in plain English, the kind of book or reading experience they're in the mood for. It might be a topic, a feeling, a question they're wrestling with, or a vague vibe. Your job is to recommend 4-6 real, published books that genuinely fit what they're after.
+${buildTasteProfileInstructions(tasteProfile)}
+
+${buildExcludeInstructions(excludeTitles)}
+
+A user will describe, in plain English, the kind of book or reading experience they're in the mood for. It might be a topic, a feeling, a question they're wrestling with, or a vague vibe. Your job is to recommend ${count ? `exactly ${count}` : '4-6'} real, published book${count === 1 ? '' : 's'} that genuinely fit${count === 1 ? 's' : ''} what they're after.
 
 ${isKids ? '' : `Genre constraint for this request: ${genreInstruction}\n\n`}Guidelines:
 - Recommend real books that exist. Do not invent titles or authors.

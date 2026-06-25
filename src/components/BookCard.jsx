@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { getCoverUrl } from '../coverCache'
 
-export default function BookCard({ book }) {
+const FEEDBACK_OPTIONS = [
+  { status: 'want_to_read', icon: '🔖', label: 'Want to read' },
+  { status: 'loved', icon: '👍', label: 'Loved it' },
+  { status: 'not_for_me', icon: '👎', label: 'Not for me' },
+]
+
+export default function BookCard({ book, feedback, onFeedback, replacing }) {
   const [coverUrl, setCoverUrl] = useState(null)
   const [coverFailed, setCoverFailed] = useState(false)
   const isKids = Boolean(book.age_band)
@@ -20,6 +26,15 @@ export default function BookCard({ book }) {
       cancelled = true
     }
   }, [book.title, book.author])
+
+  if (replacing) {
+    return (
+      <div className="book-card book-card-replacing">
+        <div className="spinner spinner-small" />
+        <p>Finding something else…</p>
+      </div>
+    )
+  }
 
   return (
     <div className="book-card">
@@ -83,6 +98,19 @@ export default function BookCard({ book }) {
       <div className="why-box">
         <p className="why-label">Why this for you</p>
         <p className="why-text">{book.why_recommended}</p>
+      </div>
+      <div className="feedback-row">
+        {FEEDBACK_OPTIONS.map((option) => (
+          <button
+            key={option.status}
+            type="button"
+            className={`feedback-button ${feedback === option.status ? 'active' : ''}`}
+            onClick={() => onFeedback(option.status)}
+            title={option.label}
+          >
+            <span aria-hidden="true">{option.icon}</span> {option.label}
+          </button>
+        ))}
       </div>
     </div>
   )

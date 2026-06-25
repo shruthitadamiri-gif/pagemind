@@ -37,7 +37,8 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
     })
   }
 
-  const { prompt, genreMode, categoryId, kidsFilters } = req.body || {}
+  const { prompt, genreMode, categoryId, kidsFilters, tasteProfile, excludeTitles, count } =
+    req.body || {}
 
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 500) {
     return res.status(400).json({ error: 'Invalid prompt.' })
@@ -61,11 +62,41 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
     validKidsFilters = { ageBandId, subCategoryId }
   }
 
+  const MAX_TASTE_FIELD_LENGTH = 1500
+  const sanitizeTasteField = (value) =>
+    typeof value === 'string' && value.trim()
+      ? value.slice(0, MAX_TASTE_FIELD_LENGTH)
+      : null
+
+  const validTasteProfile = tasteProfile
+    ? {
+        loved: sanitizeTasteField(tasteProfile.loved),
+        notForMe: sanitizeTasteField(tasteProfile.notForMe),
+        wantToRead: sanitizeTasteField(tasteProfile.wantToRead),
+      }
+    : null
+
+  const validExcludeTitles = Array.isArray(excludeTitles)
+    ? excludeTitles
+        .filter((t) => typeof t === 'string' && t.trim())
+        .slice(0, 30)
+        .map((t) => t.slice(0, 200))
+    : []
+
+  const validCount = count === 1 ? 1 : null
+
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
-      system: buildSystemPrompt(genreMode, validCategoryId, validKidsFilters),
+      system: buildSystemPrompt(
+        genreMode,
+        validCategoryId,
+        validKidsFilters,
+        validTasteProfile,
+        validExcludeTitles,
+        validCount
+      ),
       messages: [{ role: 'user', content: prompt }],
     })
 
