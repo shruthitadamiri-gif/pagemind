@@ -1,4 +1,12 @@
 import { KIDS_AGE_BANDS, KIDS_SUB_CATEGORIES } from '../categories'
+import Dropdown from './Dropdown'
+
+const AGE_BAND_OPTIONS = KIDS_AGE_BANDS.map((band) => ({ value: band.id, label: band.label }))
+
+const SUB_CATEGORY_OPTIONS = [
+  { value: null, label: 'Any' },
+  ...KIDS_SUB_CATEGORIES.map((sub) => ({ value: sub, label: sub })),
+]
 
 export default function KidsFilters({
   ageBandId,
@@ -11,18 +19,12 @@ export default function KidsFilters({
       <label className="category-selector-label" htmlFor="age-band-select">
         Age band
       </label>
-      <select
+      <Dropdown
         id="age-band-select"
-        className="dropdown-select"
         value={ageBandId}
-        onChange={(e) => onAgeBandChange(e.target.value)}
-      >
-        {KIDS_AGE_BANDS.map((band) => (
-          <option key={band.id} value={band.id}>
-            {band.label}
-          </option>
-        ))}
-      </select>
+        onChange={onAgeBandChange}
+        options={AGE_BAND_OPTIONS}
+      />
 
       <label
         className="category-selector-label kids-subcategory-label"
@@ -30,19 +32,12 @@ export default function KidsFilters({
       >
         Theme (optional)
       </label>
-      <select
+      <Dropdown
         id="sub-category-select"
-        className="dropdown-select"
-        value={subCategoryId || ''}
-        onChange={(e) => onSubCategoryChange(e.target.value || null)}
-      >
-        <option value="">Any</option>
-        {KIDS_SUB_CATEGORIES.map((sub) => (
-          <option key={sub} value={sub}>
-            {sub}
-          </option>
-        ))}
-      </select>
+        value={subCategoryId}
+        onChange={onSubCategoryChange}
+        options={SUB_CATEGORY_OPTIONS}
+      />
     </div>
   )
 }

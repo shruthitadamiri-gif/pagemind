@@ -1,4 +1,10 @@
 import { CATEGORIES } from '../categories'
+import Dropdown from './Dropdown'
+
+const OPTIONS = [
+  { value: null, label: 'All Categories' },
+  ...CATEGORIES.map((category) => ({ value: category.id, label: category.label })),
+]
 
 export default function CategorySelector({ value, onChange }) {
   const selected = value ? CATEGORIES.find((c) => c.id === value) : null
@@ -8,19 +14,7 @@ export default function CategorySelector({ value, onChange }) {
       <label className="category-selector-label" htmlFor="domain-select">
         Pick a domain, or let PageMind decide
       </label>
-      <select
-        id="domain-select"
-        className="dropdown-select"
-        value={value || ''}
-        onChange={(e) => onChange(e.target.value || null)}
-      >
-        <option value="">All Categories</option>
-        {CATEGORIES.map((category) => (
-          <option key={category.id} value={category.id}>
-            {category.label}
-          </option>
-        ))}
-      </select>
+      <Dropdown id="domain-select" value={value} onChange={onChange} options={OPTIONS} />
       <p className="category-selector-description">
         {selected
           ? selected.description
