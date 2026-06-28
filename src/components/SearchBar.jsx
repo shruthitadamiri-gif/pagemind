@@ -1,4 +1,10 @@
-export default function SearchBar({ value, onChange, onSubmit, loading }) {
+export default function SearchBar({
+  value,
+  onChange,
+  onSubmit,
+  loading,
+  placeholder = 'What kind of book are you in the mood for?',
+}) {
   return (
     <form
       className="search-form"
@@ -11,7 +17,7 @@ export default function SearchBar({ value, onChange, onSubmit, loading }) {
         <input
           className="search-input"
           type="text"
-          placeholder="What kind of book are you in the mood for?"
+          placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={loading}

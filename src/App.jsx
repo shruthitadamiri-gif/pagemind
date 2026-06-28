@@ -6,9 +6,11 @@ import CategoryFilter from './components/CategoryFilter'
 import CategorySelector from './components/CategorySelector'
 import GenreToggle from './components/GenreToggle'
 import KidsFilters from './components/KidsFilters'
+import ModeToggle from './components/ModeToggle'
 import { getRecommendations } from './api'
 import {
   CATEGORIES,
+  ADULT_CATEGORIES,
   GENRE_MODES,
   KIDS_CATEGORY_ID,
   KIDS_AGE_BANDS,
@@ -32,6 +34,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [activeCategory, setActiveCategory] = useState(null)
+  const [mode, setMode] = useState('me')
   const [genreMode, setGenreMode] = useState('either')
   const [domainId, setDomainId] = useState(null)
   const [ageBandId, setAgeBandId] = useState(KIDS_DEFAULT_AGE_BAND)
@@ -40,7 +43,7 @@ export default function App() {
   const [replacingKeys, setReplacingKeys] = useState([])
 
   async function runSearch(prompt, overrides = {}) {
-    const mode = overrides.mode ?? genreMode
+    const genre = overrides.mode ?? genreMode
     const domain = overrides.domain ?? domainId
     const ageBand = overrides.ageBand ?? ageBandId
     const subCategory = overrides.subCategory !== undefined ? overrides.subCategory : subCategoryId
@@ -53,7 +56,7 @@ export default function App() {
       const kidsFilters =
         domain === KIDS_CATEGORY_ID ? { ageBandId: ageBand, subCategoryId: subCategory } : null
       const tasteProfile = buildTasteProfile()
-      const results = await getRecommendations(prompt, mode, domain, kidsFilters, tasteProfile)
+      const results = await getRecommendations(prompt, genre, domain, kidsFilters, tasteProfile)
       setBooks(results)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -130,38 +133,38 @@ export default function App() {
     }
   }
 
-  function handleExamplePick(prompt, categoryId = null) {
-    setQuery(prompt)
-    setDomainId(categoryId)
-    const enteringKids = categoryId === KIDS_CATEGORY_ID
-    const ageBand = enteringKids ? KIDS_DEFAULT_AGE_BAND : ageBandId
-    const subCategory = enteringKids ? null : subCategoryId
-    if (enteringKids) {
+  function handleModeChange(newMode) {
+    setMode(newMode)
+    const domain = newMode === 'kid' ? KIDS_CATEGORY_ID : null
+    const ageBand = newMode === 'kid' ? KIDS_DEFAULT_AGE_BAND : ageBandId
+    setDomainId(domain)
+    if (newMode === 'kid') {
       setAgeBandId(ageBand)
-      setSubCategoryId(subCategory)
+      setSubCategoryId(null)
     }
-    runSearch(prompt, { domain: categoryId, ageBand, subCategory })
+    if (query.trim() && books.length > 0) {
+      runSearch(query, { domain, ageBand, subCategory: newMode === 'kid' ? null : subCategoryId })
+    }
   }
 
-  function handleGenreChange(mode) {
-    setGenreMode(mode)
+  function handleExamplePick(prompt, categoryId = null) {
+    setQuery(prompt)
+    const domain = mode === 'kid' ? KIDS_CATEGORY_ID : categoryId
+    setDomainId(domain)
+    runSearch(prompt, { domain, ageBand: ageBandId, subCategory: subCategoryId })
+  }
+
+  function handleGenreChange(newGenreMode) {
+    setGenreMode(newGenreMode)
     if (query.trim() && books.length > 0) {
-      runSearch(query, { mode })
+      runSearch(query, { mode: newGenreMode })
     }
   }
 
   function handleDomainChange(newDomainId) {
-    const enteringKids = newDomainId === KIDS_CATEGORY_ID && domainId !== KIDS_CATEGORY_ID
-    const ageBand = enteringKids ? KIDS_DEFAULT_AGE_BAND : ageBandId
-    const subCategory = enteringKids ? null : subCategoryId
-
     setDomainId(newDomainId)
-    if (enteringKids) {
-      setAgeBandId(ageBand)
-      setSubCategoryId(subCategory)
-    }
     if (query.trim() && books.length > 0) {
-      runSearch(query, { domain: newDomainId, ageBand, subCategory })
+      runSearch(query, { domain: newDomainId })
     }
   }
 
@@ -188,20 +191,15 @@ export default function App() {
     ? books.filter((b) => b.category === activeCategory)
     : books
 
-  const isKidsDomain = domainId === KIDS_CATEGORY_ID
+  const isKidsMode = mode === 'kid'
   const domainLabel = domainId
     ? CATEGORIES.find((c) => c.id === domainId)?.label
     : 'All Categories'
   const genreLabel = GENRE_MODES.find((g) => g.id === genreMode)?.label || 'Either'
   const ageBandShortLabel = KIDS_AGE_BANDS.find((b) => b.id === ageBandId)?.shortLabel
 
-  const showingParts = [domainLabel]
-  if (isKidsDomain) {
-    showingParts.push(ageBandShortLabel)
-    if (subCategoryId) showingParts.push(subCategoryId)
-  } else {
-    showingParts.push(genreLabel)
-  }
+  const showingParts = isKidsMode ? ['Kids', ageBandShortLabel] : [domainLabel, genreLabel]
+  if (isKidsMode && subCategoryId) showingParts.push(subCategoryId)
 
   return (
     <div className="app">
@@ -210,31 +208,45 @@ export default function App() {
         <p>Tell it what's on your mind. It'll find the book.</p>
       </div>
 
+      <ModeToggle value={mode} onChange={handleModeChange} />
+
       <SearchBar
         value={query}
         onChange={setQuery}
         onSubmit={() => runSearch(query)}
         loading={loading}
+        placeholder={
+          isKidsMode
+            ? "What's your child into right now?"
+            : 'What kind of book are you in the mood for?'
+        }
       />
 
       <div className="refine-controls">
         <p className="refine-label">Refine your search</p>
-        <CategorySelector value={domainId} onChange={handleDomainChange} />
-        {isKidsDomain && (
+        {isKidsMode ? (
           <KidsFilters
             ageBandId={ageBandId}
             onAgeBandChange={handleAgeBandChange}
             subCategoryId={subCategoryId}
             onSubCategoryChange={handleSubCategoryChange}
           />
+        ) : (
+          <>
+            <CategorySelector
+              value={domainId}
+              onChange={handleDomainChange}
+              categories={ADULT_CATEGORIES}
+            />
+            <GenreToggle value={genreMode} onChange={handleGenreChange} />
+          </>
         )}
-        {!isKidsDomain && <GenreToggle value={genreMode} onChange={handleGenreChange} />}
       </div>
 
       {error && <div className="error-banner">{error}</div>}
 
       {!loading && books.length === 0 && !error && (
-        <EmptyState onPick={handleExamplePick} domainId={domainId} />
+        <EmptyState onPick={handleExamplePick} mode={mode} />
       )}
 
       {loading && (

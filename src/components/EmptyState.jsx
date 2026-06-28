@@ -1,5 +1,3 @@
-import { KIDS_CATEGORY_ID } from '../categories'
-
 const DEFAULT_EXAMPLE_PROMPTS = [
   { prompt: 'Why do smart people make terrible decisions?', categoryId: 'decision-science' },
   { prompt: 'How did geography determine which civilizations won?', categoryId: 'macro-history' },
@@ -8,14 +6,14 @@ const DEFAULT_EXAMPLE_PROMPTS = [
 ]
 
 const KIDS_EXAMPLE_PROMPTS = [
-  { prompt: 'Something funny about animals for a 4 year old', categoryId: KIDS_CATEGORY_ID },
-  { prompt: 'A bedtime book that actually works', categoryId: KIDS_CATEGORY_ID },
-  { prompt: 'A book about big feelings like anger or jealousy', categoryId: KIDS_CATEGORY_ID },
-  { prompt: 'Books that come with music like Storybook Orchestra', categoryId: KIDS_CATEGORY_ID },
+  { prompt: 'Something funny about animals for a 4 year old' },
+  { prompt: 'A bedtime book that actually works' },
+  { prompt: 'A book about big feelings like anger or jealousy' },
+  { prompt: 'Books that come with music like Storybook Orchestra' },
 ]
 
-export default function EmptyState({ onPick, domainId }) {
-  const examples = domainId === KIDS_CATEGORY_ID ? KIDS_EXAMPLE_PROMPTS : DEFAULT_EXAMPLE_PROMPTS
+export default function EmptyState({ onPick, mode }) {
+  const examples = mode === 'kid' ? KIDS_EXAMPLE_PROMPTS : DEFAULT_EXAMPLE_PROMPTS
 
   return (
     <div className="examples">

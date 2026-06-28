@@ -92,6 +92,10 @@ export const PRIMARY_CATEGORY = 'Decision Science'
 
 export const KIDS_CATEGORY_ID = 'kids'
 
+// The adult-facing domain picker only ever shows these — Kids has its own
+// dedicated flow (see ModeToggle), not a slot in this dropdown.
+export const ADULT_CATEGORIES = CATEGORIES.filter((c) => c.id !== KIDS_CATEGORY_ID)
+
 // Add a new band here to expand the Kids age-band picker — no other code
 // changes needed for the picker UI, but update the system prompt's
 // outgrown-staples guidance below if the youngest band changes.
