@@ -27,6 +27,7 @@ import { buildSystemPrompt } from '../../src/categories.js'
 //   categoryId:   string | null             — domain filter
 //   kidsFilters:  { ageBandId, subCategoryId } | null
 //   tasteProfile: TasteProfile | null       — output of tasteAgent
+//   intent:       ParsedIntent | null       — output of intentAgent (optional enrichment)
 //   excludeTitles: string[]                 — titles already shown, must not repeat
 //   count:        number | null             — 1 for replacements, null for default (5–8)
 // }
@@ -126,6 +127,23 @@ function parseAndValidate(rawText) {
  * @returns {Promise<Book[]>}
  * @throws {SearchAgentError}
  */
+/**
+ * Builds an intent summary string to append to the system prompt when
+ * intentAgent successfully parsed the query. This gives Sonnet additional
+ * structured context without changing the base system prompt.
+ */
+function buildIntentContext(intent) {
+  if (!intent) return ''
+  const lines = []
+  if (intent.similar_to?.length) lines.push(`Reference books/authors: ${intent.similar_to.join(', ')}`)
+  if (intent.topics?.length) lines.push(`Key topics: ${intent.topics.join(', ')}`)
+  if (intent.mood) lines.push(`Reading mood: ${intent.mood}`)
+  if (intent.constraints?.length) lines.push(`Constraints: ${intent.constraints.join(', ')}`)
+  if (intent.implicit_genre) lines.push(`Implied genre: ${intent.implicit_genre}`)
+  if (!lines.length) return ''
+  return `\n\n### Parsed query intent\n${lines.join('\n')}`
+}
+
 export async function runSearchAgent(client, input) {
   const {
     userQuery,
@@ -133,19 +151,20 @@ export async function runSearchAgent(client, input) {
     categoryId = null,
     kidsFilters = null,
     tasteProfile = null,
+    intent = null,
     excludeTitles = [],
     count = null,
   } = input
 
-  // Build the system prompt using the shared categories logic
-  const systemPrompt = buildSystemPrompt(
-    genreMode,
-    categoryId,
-    kidsFilters ?? {},
-    tasteProfile,
-    excludeTitles,
-    count
-  )
+  // Build the system prompt using the shared categories logic, then append
+  // structured intent if intentAgent produced useful output.
+  const systemPrompt =
+    buildSystemPrompt(genreMode, categoryId, kidsFilters ?? {}, tasteProfile, excludeTitles, count)
+    + buildIntentContext(intent)
+
+  // Use the enriched query if intentAgent produced one; fall back to raw query.
+  // The enriched query is more precise but preserves the user's original intent.
+  const queryToSend = intent?.enriched_query || userQuery
 
   let rawText
   try {
@@ -153,7 +172,7 @@ export async function runSearchAgent(client, input) {
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userQuery }],
+      messages: [{ role: 'user', content: queryToSend }],
     })
 
     rawText = message.content

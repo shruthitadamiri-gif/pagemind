@@ -23,6 +23,7 @@
  */
 
 import { runTasteAgent } from './agents/tasteAgent.js'
+import { runIntentAgent } from './agents/intentAgent.js'
 import { runSearchAgent, SearchAgentError } from './agents/searchAgent.js'
 
 // How many times to retry the Search Agent on a retryable failure
@@ -94,20 +95,38 @@ export async function orchestrate(client, input) {
   const trace = []
 
   // -------------------------------------------------------------------------
-  // Step 1 — Taste Agent
-  // The taste agent is fast (pure logic, no API call), so we run it first
-  // and pass its output into the search agent. If it fails for any reason,
-  // we continue without taste data — degraded but not broken.
+  // Step 1 — Taste Agent + Intent Agent (run in parallel)
+  //
+  // These two agents are independent — neither needs the other's output —
+  // so we run them concurrently with Promise.all. Total wait time is
+  // max(tasteAgent, intentAgent) instead of the sum of both.
+  //
+  // If either fails, we log it and continue without that signal. The search
+  // agent degrades gracefully: missing taste → no personalisation;
+  // missing intent → raw query sent directly to Sonnet.
   // -------------------------------------------------------------------------
 
-  const tasteResult = await timed(() => runTasteAgent(feedbackRecords))
+  const [tasteResult, intentResult] = await Promise.all([
+    timed(() => runTasteAgent(feedbackRecords)),
+    timed(() => runIntentAgent(client, { userQuery, categoryId, genreMode })),
+  ])
+
   const tasteProfile = tasteResult.result
+  const intent = intentResult.result
 
   trace.push({
     agent: 'tasteAgent',
     status: tasteResult.error ? 'failed' : tasteProfile ? 'success' : 'skipped',
     durationMs: tasteResult.durationMs,
     ...(tasteResult.error && { error: tasteResult.error.message }),
+  })
+
+  trace.push({
+    agent: 'intentAgent',
+    status: intentResult.error ? 'failed' : intent ? 'success' : 'skipped',
+    durationMs: intentResult.durationMs,
+    ...(intentResult.error && { error: intentResult.error.message }),
+    ...(intent && { enriched_query: intent.enriched_query }),
   })
 
   // -------------------------------------------------------------------------
@@ -129,6 +148,7 @@ export async function orchestrate(client, input) {
         categoryId,
         kidsFilters,
         tasteProfile,
+        intent,
         excludeTitles,
         count,
       })
