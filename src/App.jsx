@@ -16,7 +16,7 @@ import {
   KIDS_AGE_BANDS,
   KIDS_DEFAULT_AGE_BAND,
 } from './categories'
-import { getAllFeedback, setFeedback, bookKey, buildTasteProfile } from './feedbackStore'
+import { getAllFeedback, setFeedback, bookKey, getFeedbackRecords } from './feedbackStore'
 
 function loadFeedbackMap() {
   const all = getAllFeedback()
@@ -55,8 +55,8 @@ export default function App() {
     try {
       const kidsFilters =
         domain === KIDS_CATEGORY_ID ? { ageBandId: ageBand, subCategoryId: subCategory } : null
-      const tasteProfile = buildTasteProfile()
-      const results = await getRecommendations(prompt, genre, domain, kidsFilters, tasteProfile)
+      const feedbackRecords = getFeedbackRecords()
+      const results = await getRecommendations(prompt, genre, domain, kidsFilters, feedbackRecords)
       setBooks(results)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
@@ -71,13 +71,13 @@ export default function App() {
     return excludeTitles.some((t) => normalize(t) === normalize(title))
   }
 
-  async function fetchSingleReplacement(kidsFilters, tasteProfile, excludeTitles) {
+  async function fetchSingleReplacement(kidsFilters, feedbackRecords, excludeTitles) {
     const replacements = await getRecommendations(
       lastSearchQuery,
       genreMode,
       domainId,
       kidsFilters,
-      tasteProfile,
+      feedbackRecords,
       excludeTitles,
       1
     )
@@ -90,16 +90,16 @@ export default function App() {
     try {
       const kidsFilters =
         domainId === KIDS_CATEGORY_ID ? { ageBandId, subCategoryId } : null
-      const tasteProfile = buildTasteProfile()
+      const feedbackRecords = getFeedbackRecords()
       let excludeTitles = books.map((b) => b.title)
-      let replacement = await fetchSingleReplacement(kidsFilters, tasteProfile, excludeTitles)
+      let replacement = await fetchSingleReplacement(kidsFilters, feedbackRecords, excludeTitles)
 
       // The model occasionally ignores the exclusion list — retry once
       // before giving up, since silently redisplaying a book the reader
       // just rejected would be worse than a thinner result set.
       if (replacement && isExcludedTitle(replacement.title, excludeTitles)) {
         excludeTitles = [...excludeTitles, replacement.title]
-        replacement = await fetchSingleReplacement(kidsFilters, tasteProfile, excludeTitles)
+        replacement = await fetchSingleReplacement(kidsFilters, feedbackRecords, excludeTitles)
       }
 
       if (replacement && isExcludedTitle(replacement.title, excludeTitles)) {

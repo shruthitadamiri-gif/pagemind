@@ -5,13 +5,13 @@ import Anthropic from '@anthropic-ai/sdk'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import {
-  buildSystemPrompt,
   CATEGORIES,
   KIDS_CATEGORY_ID,
   KIDS_AGE_BANDS,
   KIDS_DEFAULT_AGE_BAND,
   KIDS_SUB_CATEGORIES,
 } from '../src/categories.js'
+import { orchestrate } from './orchestrator.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const distDir = path.join(__dirname, '..', 'dist')
@@ -37,7 +37,7 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
     })
   }
 
-  const { prompt, genreMode, categoryId, kidsFilters, tasteProfile, excludeTitles, count } =
+  const { prompt, genreMode, categoryId, kidsFilters, excludeTitles, count } =
     req.body || {}
 
   if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 500) {
@@ -62,19 +62,26 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
     validKidsFilters = { ageBandId, subCategoryId }
   }
 
-  const MAX_TASTE_FIELD_LENGTH = 1500
-  const sanitizeTasteField = (value) =>
-    typeof value === 'string' && value.trim()
-      ? value.slice(0, MAX_TASTE_FIELD_LENGTH)
-      : null
-
-  const validTasteProfile = tasteProfile
-    ? {
-        loved: sanitizeTasteField(tasteProfile.loved),
-        notForMe: sanitizeTasteField(tasteProfile.notForMe),
-        wantToRead: sanitizeTasteField(tasteProfile.wantToRead),
-      }
-    : null
+  // Accept raw feedback records from the client and pass them to the orchestrator.
+  // The Taste Agent (server-side) processes these into a taste profile — we no
+  // longer trust the client to send a pre-built profile string.
+  const VALID_STATUSES = ['loved', 'want_to_read', 'not_for_me']
+  const validFeedbackRecords = Array.isArray(req.body?.feedbackRecords)
+    ? req.body.feedbackRecords
+        .filter(
+          (r) =>
+            r &&
+            typeof r.title === 'string' && r.title.trim() &&
+            typeof r.author === 'string' && r.author.trim() &&
+            VALID_STATUSES.includes(r.status)
+        )
+        .slice(0, 100)
+        .map((r) => ({
+          title: r.title.slice(0, 200),
+          author: r.author.slice(0, 200),
+          status: r.status,
+        }))
+    : []
 
   const validExcludeTitles = Array.isArray(excludeTitles)
     ? excludeTitles
@@ -86,43 +93,25 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
   const validCount = count === 1 ? 1 : null
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      system: buildSystemPrompt(
-        genreMode,
-        validCategoryId,
-        validKidsFilters,
-        validTasteProfile,
-        validExcludeTitles,
-        validCount
-      ),
-      messages: [{ role: 'user', content: prompt }],
+    const result = await orchestrate(client, {
+      userQuery: prompt,
+      genreMode,
+      categoryId: validCategoryId,
+      kidsFilters: validCategoryId === KIDS_CATEGORY_ID ? validKidsFilters : null,
+      feedbackRecords: validFeedbackRecords,
+      excludeTitles: validExcludeTitles,
+      count: validCount,
     })
 
-    const text = message.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('')
-      .trim()
-
-    const jsonText = text.replace(/^```json\s*/i, '').replace(/```\s*$/, '')
-
-    let parsed
-    try {
-      parsed = JSON.parse(jsonText)
-    } catch {
-      return res.status(502).json({ error: 'Could not parse recommendations. Please try again.' })
+    // Log the agent trace in dev so you can see what each agent did
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[orchestrator trace]', JSON.stringify(result.agentTrace, null, 2))
     }
 
-    if (!parsed.books || !Array.isArray(parsed.books)) {
-      return res.status(502).json({ error: 'Unexpected response shape from API.' })
-    }
-
-    res.json({ books: parsed.books })
+    res.json({ books: result.books })
   } catch (err) {
-    console.error(err)
-    res.status(502).json({ error: 'Failed to fetch recommendations. Please try again.' })
+    console.error('[orchestrator error]', err)
+    res.status(502).json({ error: err.message || 'Failed to fetch recommendations. Please try again.' })
   }
 })
 

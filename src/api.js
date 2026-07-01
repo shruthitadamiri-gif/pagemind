@@ -3,7 +3,7 @@ export async function getRecommendations(
   genreMode = 'either',
   categoryId = null,
   kidsFilters = null,
-  tasteProfile = null,
+  feedbackRecords = [],
   excludeTitles = [],
   count = null
 ) {
@@ -15,7 +15,7 @@ export async function getRecommendations(
       genreMode,
       categoryId,
       kidsFilters,
-      tasteProfile,
+      feedbackRecords,
       excludeTitles,
       count,
     }),

@@ -46,22 +46,18 @@ export function setFeedback(book, status) {
   return all
 }
 
-export function buildTasteProfile() {
-  const entries = Object.values(getAllFeedback()).sort((a, b) => a.updatedAt - b.updatedAt)
-  if (entries.length === 0) return null
-
-  const fmt = (status) =>
-    entries
-      .filter((e) => e.status === status)
-      .slice(-MAX_PER_BUCKET)
-      .map((e) => `"${e.title}" by ${e.author}`)
-      .join(', ') || null
-
-  const profile = {
-    loved: fmt('loved'),
-    notForMe: fmt('not_for_me'),
-    wantToRead: fmt('want_to_read'),
-  }
-
-  return profile.loved || profile.notForMe || profile.wantToRead ? profile : null
+/**
+ * Returns raw feedback records for sending to the server.
+ * The Taste Agent (server-side) now builds the profile — the client just
+ * sends the raw data. This keeps taste profile logic centralized on the server
+ * where it can be improved without a client deploy.
+ */
+export function getFeedbackRecords() {
+  const entries = Object.values(getAllFeedback())
+  if (entries.length === 0) return []
+  return entries.map((e) => ({
+    title: e.title,
+    author: e.author,
+    status: e.status,
+  }))
 }
