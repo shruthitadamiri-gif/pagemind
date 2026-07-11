@@ -89,7 +89,13 @@ User types query
 - Functional React components, hooks only (no class components)
 - No TypeScript yet — plain JS with JSDoc where types matter
 - ES modules throughout (`import/export`), no CommonJS
-- No test suite yet — verify UI changes in the preview tool
+- Tests: `npm test` (Node's built-in test runner, zero deps). Tests live in
+  `test/` and use a mocked Anthropic client — no API key or network needed.
+  Run them before committing any change to `server/` or `src/categories.js`.
+  UI changes are still verified in the preview tool.
+- The prompt/validator field contract (blurb, why_recommended) is pinned by
+  `test/promptSchema.test.js` — if you rename response fields, update the
+  prompt shape, the validator, BookCard.jsx, and these tests together.
 
 ### What NOT to do
 - Do not add TypeScript without being asked — it's a deliberate choice to keep iteration fast
