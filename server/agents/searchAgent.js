@@ -78,8 +78,8 @@ function isValidBook(book) {
     book &&
     typeof book.title === 'string' && book.title.trim() &&
     typeof book.author === 'string' && book.author.trim() &&
-    typeof book.why === 'string' && book.why.trim() &&
-    typeof book.summary === 'string' && book.summary.trim()
+    typeof book.blurb === 'string' && book.blurb.trim() &&
+    typeof book.why_recommended === 'string' && book.why_recommended.trim()
   )
 }
 
