@@ -176,7 +176,7 @@ ${subCategory ? `The parent has filtered to the "${subCategory}" sub-category �
 Prioritise:
 - Read-aloud quality: strong rhythm, pacing, and language that sounds good spoken aloud by a parent.
 - Library availability: prefer widely available titles a parent can realistically borrow from a public library.
-- Taste profile: this child loves humor and absurdist premises (like "Dragons Love Tacos", "Grumpy Monkey"), loveable characters with big feelings (like the Llama Llama series), rhythm and repetition (like the Little Blue Truck series), animal characters, and satisfying repeatable story arcs. She also loved "The Storybook Orchestra" series, which pairs classical music with narrative storytelling — recommend similar books that integrate music, rhythm, or sound as a core part of the experience, not just background, when relevant.
+- What tends to work read-aloud: humor and absurdist premises, loveable characters with big feelings, rhythm and repetition, animal characters, and satisfying repeatable story arcs — weight these only insofar as they fit what the parent actually asked for.
 ${subCategoryGuidance ? `\n${subCategoryGuidance}` : ''}`
 }
 

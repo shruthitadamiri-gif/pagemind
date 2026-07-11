@@ -20,6 +20,9 @@ const apiKey = process.env.ANTHROPIC_API_KEY
 const client = apiKey ? new Anthropic({ apiKey }) : null
 
 const app = express()
+// Render terminates TLS at a proxy, so client IPs arrive via X-Forwarded-For.
+// Without this, express-rate-limit would key every request on the proxy's IP.
+app.set('trust proxy', 1)
 app.use(express.json())
 
 const recommendLimiter = rateLimit({

@@ -106,9 +106,16 @@ export async function orchestrate(client, input) {
   // missing intent → raw query sent directly to Sonnet.
   // -------------------------------------------------------------------------
 
+  // Replacement fetches (count === 1) reuse a query that was already parsed
+  // when the original search ran — re-parsing it costs a Haiku call and ~1s
+  // of latency for zero new information, so skip intent entirely there.
+  const shouldParseIntent = count !== 1
+
   const [tasteResult, intentResult] = await Promise.all([
     timed(() => runTasteAgent(feedbackRecords)),
-    timed(() => runIntentAgent(client, { userQuery, categoryId, genreMode })),
+    shouldParseIntent
+      ? timed(() => runIntentAgent(client, { userQuery, categoryId, genreMode }))
+      : Promise.resolve({ result: null, durationMs: 0, error: null }),
   ])
 
   const tasteProfile = tasteResult.result
