@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getCoverUrl } from '../coverCache'
+import { buildBookLinks } from '../bookLinks'
 
 const FEEDBACK_OPTIONS = [
   { status: 'want_to_read', icon: '🔖', label: 'Want to read' },
@@ -17,6 +18,7 @@ export default function BookCard({ book, feedback, onFeedback, replacing }) {
   const [coverUrl, setCoverUrl] = useState(null)
   const [coverFailed, setCoverFailed] = useState(false)
   const isKids = Boolean(book.age_band)
+  const links = buildBookLinks(book.title, book.author)
 
   useEffect(() => {
     let cancelled = false
@@ -112,6 +114,17 @@ export default function BookCard({ book, feedback, onFeedback, replacing }) {
       <div className="why-box">
         <p className="why-label">Why this for you</p>
         <p className="why-text">{book.why_recommended}</p>
+      </div>
+      <div className="book-links-row">
+        <a href={links.amazon} target="_blank" rel="noopener noreferrer" className="book-link">
+          📖 Kindle / Buy
+        </a>
+        <a href={links.audible} target="_blank" rel="noopener noreferrer" className="book-link">
+          🎧 Audiobook
+        </a>
+        <a href={links.goodreads} target="_blank" rel="noopener noreferrer" className="book-link">
+          ⭐ Goodreads
+        </a>
       </div>
       <div className="feedback-row">
         {FEEDBACK_OPTIONS.map((option) => (

@@ -815,6 +815,34 @@ body::before {
   opacity: 0.92;
 }
 
+.book-links-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.book-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.book-link:hover {
+  border-color: var(--border-hover);
+  background: var(--why-bg);
+  color: var(--ink);
+}
+
 .feedback-row {
   display: flex;
   flex-wrap: wrap;
