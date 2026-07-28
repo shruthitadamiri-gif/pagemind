@@ -25,6 +25,7 @@
 import { runTasteAgent } from './agents/tasteAgent.js'
 import { runIntentAgent } from './agents/intentAgent.js'
 import { runSearchAgent, SearchAgentError } from './agents/searchAgent.js'
+import { runAdmiredThinkerAgent, AdmiredThinkerAgentError } from './agents/admiredThinkerAgent.js'
 
 // How many times to retry the Search Agent on a retryable failure
 const MAX_SEARCH_RETRIES = 1
@@ -135,6 +136,73 @@ export async function orchestrate(client, input) {
     ...(intentResult.error && { error: intentResult.error.message }),
     ...(intent && { enriched_query: intent.enriched_query }),
   })
+
+  // -------------------------------------------------------------------------
+  // Step 1.5 — Admired Thinker Agent (branch)
+  // When intentAgent detects a named public figure, this replaces the normal
+  // search pipeline entirely — the request routes to live web-search-based
+  // research instead of Sonnet generating recommendations directly.
+  // -------------------------------------------------------------------------
+
+  if (intent?.admired_thinker?.person_name) {
+    let admiredResult = null
+    let admiredError = null
+    let admiredAttempts = 0
+
+    while (admiredAttempts <= MAX_SEARCH_RETRIES && admiredResult === null) {
+      const attempt = await timed(() =>
+        runAdmiredThinkerAgent(client, {
+          personName: intent.admired_thinker.person_name,
+          personContext: intent.admired_thinker.person_context,
+          excludeTitles,
+        })
+      )
+
+      if (attempt.error) {
+        const err = attempt.error
+        if (err instanceof AdmiredThinkerAgentError && err.retryable && admiredAttempts < MAX_SEARCH_RETRIES) {
+          trace.push({
+            agent: 'admiredThinkerAgent',
+            status: 'failed',
+            durationMs: attempt.durationMs,
+            error: `${err.message} (attempt ${admiredAttempts + 1}, retrying)`,
+          })
+          admiredAttempts++
+          continue
+        }
+        admiredError = err
+        trace.push({
+          agent: 'admiredThinkerAgent',
+          status: 'failed',
+          durationMs: attempt.durationMs,
+          error: err.message,
+        })
+        break
+      }
+
+      admiredResult = attempt.result
+      trace.push({ agent: 'admiredThinkerAgent', status: 'success', durationMs: attempt.durationMs })
+      admiredAttempts++
+    }
+
+    if (!admiredResult) {
+      const err = new Error(admiredError?.message || 'Failed to research this person. Please try again.')
+      err.trace = trace
+      throw err
+    }
+
+    return {
+      books: admiredResult.books,
+      tasteProfile,
+      agentTrace: trace,
+      admiredThinker: {
+        personName: intent.admired_thinker.person_name,
+        found: admiredResult.found,
+        reason: admiredResult.reason,
+        narrative: admiredResult.narrative,
+      },
+    }
+  }
 
   // -------------------------------------------------------------------------
   // Step 2 — Search Agent (with retry)

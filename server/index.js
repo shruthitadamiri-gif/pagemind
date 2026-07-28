@@ -111,7 +111,10 @@ app.post('/api/recommend', recommendLimiter, async (req, res) => {
       console.log('[orchestrator trace]', JSON.stringify(result.agentTrace, null, 2))
     }
 
-    res.json({ books: result.books })
+    res.json({
+      books: result.books,
+      ...(result.admiredThinker && { admiredThinker: result.admiredThinker }),
+    })
   } catch (err) {
     console.error('[orchestrator error]', err)
     res.status(502).json({ error: err.message || 'Failed to fetch recommendations. Please try again.' })

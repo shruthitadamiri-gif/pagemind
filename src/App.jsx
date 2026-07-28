@@ -41,6 +41,7 @@ export default function App() {
   const [subCategoryId, setSubCategoryId] = useState(null)
   const [feedbackMap, setFeedbackMap] = useState(loadFeedbackMap)
   const [replacingKeys, setReplacingKeys] = useState([])
+  const [admiredThinker, setAdmiredThinker] = useState(null)
 
   async function runSearch(prompt, overrides = {}) {
     const genre = overrides.mode ?? genreMode
@@ -52,12 +53,20 @@ export default function App() {
     setLoading(true)
     setError(null)
     setActiveCategory(null)
+    setAdmiredThinker(null)
     try {
       const kidsFilters =
         domain === KIDS_CATEGORY_ID ? { ageBandId: ageBand, subCategoryId: subCategory } : null
       const feedbackRecords = getFeedbackRecords()
-      const results = await getRecommendations(prompt, genre, domain, kidsFilters, feedbackRecords)
+      const { books: results, admiredThinker: admiredResult } = await getRecommendations(
+        prompt,
+        genre,
+        domain,
+        kidsFilters,
+        feedbackRecords
+      )
       setBooks(results)
+      setAdmiredThinker(admiredResult)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
       setBooks([])
@@ -72,7 +81,7 @@ export default function App() {
   }
 
   async function fetchSingleReplacement(kidsFilters, feedbackRecords, excludeTitles) {
-    const replacements = await getRecommendations(
+    const { books: replacements } = await getRecommendations(
       lastSearchQuery,
       genreMode,
       domainId,
@@ -253,6 +262,13 @@ export default function App() {
         <div className="loading">
           <div className="spinner" />
           <p>Reading the shelves…</p>
+        </div>
+      )}
+
+      {!loading && admiredThinker?.narrative && (
+        <div className="admired-thinker-narrative">
+          <p className="admired-thinker-label">The pattern in {admiredThinker.personName}'s reading</p>
+          <p>{admiredThinker.narrative}</p>
         </div>
       )}
 

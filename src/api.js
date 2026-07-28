@@ -31,5 +31,5 @@ export async function getRecommendations(
     throw new Error('Unexpected response shape from server.')
   }
 
-  return data.books
+  return { books: data.books, admiredThinker: data.admiredThinker || null }
 }

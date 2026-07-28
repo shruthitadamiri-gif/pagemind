@@ -7,6 +7,12 @@ const FEEDBACK_OPTIONS = [
   { status: 'not_for_me', icon: '👎', label: 'Not for me' },
 ]
 
+const CONFIDENCE_TIER_LABELS = {
+  1: { text: 'Direct quote', className: 'confidence-tier-1' },
+  2: { text: 'Attributed', className: 'confidence-tier-2' },
+  3: { text: 'Aggregated', className: 'confidence-tier-3' },
+}
+
 export default function BookCard({ book, feedback, onFeedback, replacing }) {
   const [coverUrl, setCoverUrl] = useState(null)
   const [coverFailed, setCoverFailed] = useState(false)
@@ -59,6 +65,14 @@ export default function BookCard({ book, feedback, onFeedback, replacing }) {
               {book.category && <span className="category-tag">{book.category}</span>}
               {isKids && book.age_band && (
                 <span className="category-tag age-band-tag">{book.age_band}</span>
+              )}
+              {book.confidence_tier && CONFIDENCE_TIER_LABELS[book.confidence_tier] && (
+                <span
+                  className={`category-tag confidence-tag ${CONFIDENCE_TIER_LABELS[book.confidence_tier].className}`}
+                  title={book.source_note || undefined}
+                >
+                  {CONFIDENCE_TIER_LABELS[book.confidence_tier].text}
+                </span>
               )}
             </div>
           </div>

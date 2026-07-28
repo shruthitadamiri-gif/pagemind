@@ -37,6 +37,10 @@
 //   implicit_genre:   'fiction' | 'non-fiction' | null  — only set if strongly implied
 //   enriched_query:   string     — a rewritten, more precise version of the original query
 //                                  for the Search Agent to use in its system prompt
+//   admired_thinker:  { person_name: string, person_context: string | null } | null
+//                                — set when the query names a public figure and asks
+//                                  what they read/recommend/think, routes to the
+//                                  Admired Thinker agent instead of the normal search
 // }
 
 const INTENT_SYSTEM_PROMPT = `You are a query parser for a book recommendation engine.
@@ -50,8 +54,16 @@ Return ONLY a valid JSON object with these fields:
   "mood": null,            // the reading mood implied: e.g. "light and funny", "intellectually challenging", "emotionally moving", "fast-paced". Null if not clear.
   "constraints": [],       // explicit constraints the user mentioned: "shorter", "recent", "classic", "under 300 pages", "not too dense". Empty if none.
   "implicit_genre": null,  // "fiction" or "non-fiction" ONLY if strongly implied by the query. Null if ambiguous or either could work.
-  "enriched_query": ""     // rewrite the query as a clear, specific brief for a librarian. Preserve the user's intent exactly — do not change what they're asking for, just make it more precise. 1-2 sentences.
+  "enriched_query": "",    // rewrite the query as a clear, specific brief for a librarian. Preserve the user's intent exactly — do not change what they're asking for, just make it more precise. 1-2 sentences.
+  "admired_thinker": null  // see below
 }
+
+"admired_thinker" detection:
+Set this to {"person_name": "...", "person_context": "..."} ONLY when the user names a specific real, public individual and asks about what that person reads, recommends, or how they think — e.g. "what does Trevor Noah read", "books Andrew Ng recommends", "someone who thinks like Anthony Bourdain", "I admire how Malcolm Gladwell thinks".
+- "person_name": the named individual, exactly as a search engine would recognize them (full name if inferable).
+- "person_context": short free text capturing what trait the user cares about (e.g. "unique thinking", "contrarian", "systems thinker"), or null if not stated.
+- If the user describes a TYPE of thinker with NO specific name ("someone who thinks outside the box"), leave admired_thinker as null — this is a different, unsupported flow.
+- If the named "person" is a fictional character (not a real public figure), leave admired_thinker as null — treat it as a normal book-similarity query instead.
 
 Rules:
 - Return ONLY the JSON object. No explanation, no markdown fences.
@@ -113,6 +125,20 @@ export async function runIntentAgent(client, input) {
     return null
   }
 
+  const rawAdmiredThinker = parsed.admired_thinker
+  const admiredThinker =
+    rawAdmiredThinker &&
+    typeof rawAdmiredThinker.person_name === 'string' &&
+    rawAdmiredThinker.person_name.trim()
+      ? {
+          person_name: rawAdmiredThinker.person_name.trim().slice(0, 200),
+          person_context:
+            typeof rawAdmiredThinker.person_context === 'string' && rawAdmiredThinker.person_context.trim()
+              ? rawAdmiredThinker.person_context.trim().slice(0, 300)
+              : null,
+        }
+      : null
+
   return {
     similar_to: Array.isArray(parsed.similar_to) ? parsed.similar_to : [],
     topics: Array.isArray(parsed.topics) ? parsed.topics : [],
@@ -122,5 +148,6 @@ export async function runIntentAgent(client, input) {
       ? parsed.implicit_genre
       : null,
     enriched_query: parsed.enriched_query.trim(),
+    admired_thinker: admiredThinker,
   }
 }
